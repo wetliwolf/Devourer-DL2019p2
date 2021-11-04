@@ -18,4 +18,49 @@ def test_eq(a,b):
     test(a,b,operator.eq,'==')
 
 from pathlib import Path
-from IPython.core.debugger
+from IPython.core.debugger import set_trace
+from fastai import datasets
+import pickle, gzip, math, torch, matplotlib as mpl
+import matplotlib.pyplot as plt
+from torch import tensor
+from torch import optim
+
+MNIST_URL='http://deeplearning.net/data/mnist/mnist.pkl'
+
+def near(a,b):
+    return torch.allclose(a, b, rtol=1e-3, atol=1e-5)
+
+def test_near(a,b):
+    test(a,b,near)
+    
+# ========================================================================
+# Notebook 2
+# ========================================================================
+
+from torch.nn import init
+from torch import nn
+
+def get_data():
+    path = datasets.download_data(MNIST_URL, ext='.gz')
+    with gzip.open(path, 'rb') as f:
+        ((x_train, y_train), (x_valid, y_valid), _) = pickle.load(f, encoding='latin-1')
+    return map(tensor, (x_train,y_train,x_valid,y_valid))
+
+def normalize(x, m, s):
+    return (x-m)/s
+
+def test_near_zero(a,tol=1e-3): 
+    assert a.abs()<tol, f"Near zero: {a}"
+
+
+def mse(output, targ):
+    return (output.squeeze(-1) - targ).pow(2).mean()
+
+def stats(x): 
+    """ Returns mean and std """
+    return x.mean(), x.std()
+
+import torch.nn.functional as F
+import numpy as np
+
+def f1(x, leak_
