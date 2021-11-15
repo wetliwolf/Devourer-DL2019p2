@@ -140,4 +140,46 @@ class Callback():
         name = re.sub(r'Callback$', '', self.__class__.__name__)
         return camel2snake(name or 'callback')
 
-class TrainEvalCallback(Call
+class TrainEvalCallback(Callback):
+    def begin_fit(self):
+        self.run.n_epochs=0.
+        self.run.n_iter=0
+
+    def after_batch(self):
+        if not self.in_train: return
+        self.run.n_epochs += 1./self.iters
+        self.run.n_iter   += 1
+
+    def begin_epoch(self):
+        self.run.n_epochs=self.epoch
+        self.model.train()
+        self.run.in_train=True
+
+    def begin_validate(self):
+        self.model.eval()
+        self.run.in_train=False
+
+from typing import *
+
+def listify(o):
+    if o is None: return []
+    if isinstance(o, list): return o
+    if isinstance(o, str): return [o]
+    if isinstance(o, Iterable): return list(o)
+    return [o]
+
+class Runner():
+    def __init__(self, cbs=None, cb_funcs=None):
+        cbs = listify(cbs)
+        for cbf in listify(cb_funcs):
+            cb = cbf()
+            setattr(self, cb.name, cb)
+            cbs.append(cb)
+        self.stop,self.cbs = False,[TrainEvalCallback()]+cbs
+
+    @property
+    def opt(self):       return self.learn.opt
+    @property
+    def model(self):     return self.learn.model
+    @property
+    def l
