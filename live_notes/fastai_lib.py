@@ -105,4 +105,39 @@ def get_dls(train_ds, valid_ds, bs, **kwargs):
 # ========================================================================
 
 class DataBunch():
-    
+    def __init__(self, train_dl, valid_dl, c=None):
+        self.train_dl,self.valid_dl,self.c = train_dl,valid_dl,c
+
+    @property
+    def train_ds(self): return self.train_dl.dataset
+
+    @property
+    def valid_ds(self): return self.valid_dl.dataset
+
+def get_model(data, lr=0.5, nh=50):
+    m = data.train_ds.x.shape[1]
+    model = nn.Sequential(nn.Linear(m,nh), nn.ReLU(), nn.Linear(nh,data.c))
+    return model, optim.SGD(model.parameters(), lr=lr)
+
+class Learner():
+    def __init__(self, model, opt, loss_func, data):
+        self.model,self.opt,self.loss_func,self.data = model,opt,loss_func,data
+
+import re
+
+_camel_re1 = re.compile('(.)([A-Z][a-z]+)')
+_camel_re2 = re.compile('([a-z0-9])([A-Z])')
+def camel2snake(name):
+    s1 = re.sub(_camel_re1, r'\1_\2', name)
+    return re.sub(_camel_re2, r'\1_\2', s1).lower()
+
+class Callback():
+    _order=0
+    def set_runner(self, run): self.run=run
+    def __getattr__(self, k): return getattr(self.run, k)
+    @property
+    def name(self):
+        name = re.sub(r'Callback$', '', self.__class__.__name__)
+        return camel2snake(name or 'callback')
+
+class TrainEvalCallback(Call
