@@ -63,4 +63,46 @@ def stats(x):
 import torch.nn.functional as F
 import numpy as np
 
-def f1(x, leak_
+def f1(x, leak_amt=0):
+    return F.leaky_relu(l1(x), leak_amt) 
+
+
+# for a leaky relu
+# kaiming init method
+def gain(leaky_amt):
+    return math.sqrt(2.0 / (1 + leaky_amt **2))
+
+
+class Flatten(nn.Module):
+    def forward(self, x):
+        """ unrolls input tensor to a single shape"""
+        return x.view(-1)
+
+# ========================================================================
+# Notebook 3
+# ========================================================================
+
+    
+def accuracy(out, yb):
+    return (torch.argmax(out, dim=1)==yb).float().mean()
+
+class Dataset():
+    def __init__(self, x, y): self.x,self.y = x,y
+    def __len__(self): return len(self.x)
+    def __getitem__(self, i): return self.x[i],self.y[i]
+    
+
+#export
+from torch.utils.data import DataLoader, SequentialSampler, RandomSampler
+
+#export
+def get_dls(train_ds, valid_ds, bs, **kwargs):
+    return (DataLoader(train_ds, batch_size=bs, shuffle=True, **kwargs),
+            DataLoader(valid_ds, batch_size=bs*2, **kwargs))
+
+# ========================================================================
+# Notebook 4
+# ========================================================================
+
+class DataBunch():
+    
