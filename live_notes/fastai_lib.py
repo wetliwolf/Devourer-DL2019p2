@@ -252,4 +252,22 @@ class AvgStats():
         self.tot_loss += run.loss * bn
         self.count += bn
         for i,m in enumerate(self.metrics):
-            s
+            self.tot_mets[i] += m(run.pred, run.yb) * bn
+
+class AvgStatsCallback(Callback):
+    def __init__(self, metrics):
+        self.train_stats,self.valid_stats = AvgStats(metrics,True),AvgStats(metrics,False)
+
+    def begin_epoch(self):
+        self.train_stats.reset()
+        self.valid_stats.reset()
+
+    def after_loss(self):
+        stats = self.train_stats if self.in_train else self.valid_stats
+        with torch.no_grad(): stats.accumulate(self.run)
+
+    def after_epoch(self):
+        print(self.train_stats)
+        print(self.valid_stats)
+
+from functools import partial
