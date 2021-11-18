@@ -182,4 +182,39 @@ class Runner():
     @property
     def model(self):     return self.learn.model
     @property
-    def l
+    def loss_func(self): return self.learn.loss_func
+    @property
+    def data(self):      return self.learn.data
+
+    def one_batch(self, xb, yb):
+        self.xb,self.yb = xb,yb
+        if self('begin_batch'): return
+        self.pred = self.model(self.xb)
+        if self('after_pred'): return
+        self.loss = self.loss_func(self.pred, self.yb)
+        if self('after_loss') or not self.in_train: return
+        self.loss.backward()
+        if self('after_backward'): return
+        self.opt.step()
+        if self('after_step'): return
+        self.opt.zero_grad()
+
+    def all_batches(self, dl):
+        self.iters = len(dl)
+        for xb,yb in dl:
+            if self.stop: break
+            self.one_batch(xb, yb)
+            self('after_batch')
+        self.stop=False
+
+    def fit(self, epochs, learn):
+        self.epochs,self.learn,self.loss = epochs,learn,tensor(0.)
+
+        try:
+            for cb in self.cbs: cb.set_runner(self)
+            if self('begin_fit'): return
+            for epoch in range(epochs):
+                self.epoch = epoch
+                if not self('begin_epoch'): self.all_batches(self.data.train_dl)
+
+                with torch.no_grad():
