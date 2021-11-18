@@ -218,3 +218,38 @@ class Runner():
                 if not self('begin_epoch'): self.all_batches(self.data.train_dl)
 
                 with torch.no_grad():
+                    if not self('begin_validate'): self.all_batches(self.data.valid_dl)
+                if self('after_epoch'): break
+
+        finally:
+            self('after_fit')
+            self.learn = None
+
+    def __call__(self, cb_name):
+        for cb in sorted(self.cbs, key=lambda x: x._order):
+            f = getattr(cb, cb_name, None)
+            if f and f(): return True
+        return False
+
+class AvgStats():
+    def __init__(self, metrics, in_train): self.metrics,self.in_train = listify(metrics),in_train
+
+    def reset(self):
+        self.tot_loss,self.count = 0.,0
+        self.tot_mets = [0.] * len(self.metrics)
+
+    @property
+    def all_stats(self): return [self.tot_loss.item()] + self.tot_mets
+    @property
+    def avg_stats(self): return [o/self.count for o in self.all_stats]
+
+    def __repr__(self):
+        if not self.count: return ""
+        return f"{'train' if self.in_train else 'valid'}: {self.avg_stats}"
+
+    def accumulate(self, run):
+        bn = run.xb.shape[0]
+        self.tot_loss += run.loss * bn
+        self.count += bn
+        for i,m in enumerate(self.metrics):
+            s
